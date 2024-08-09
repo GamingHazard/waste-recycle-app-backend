@@ -3,6 +3,9 @@ const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
+const cors = require("cors");
+const jwt = require("jsonwebtoken");
+const ws = require("ws");
 
 require("dotenv").config();
 
@@ -29,6 +32,21 @@ mongoose
 
 app.listen(port, () => {
   console.log("server is running on port 3000");
+});
+
+// Set up WebSocket Server
+const wss = new ws.Server({ server });
+
+wss.on("connection", (socket) => {
+  console.log("Client connected");
+
+  socket.on("message", (message) => {
+    console.log("Received:", message);
+  });
+
+  socket.on("close", () => {
+    console.log("Client disconnected");
+  });
 });
 
 const User = require("./models/user");
@@ -188,7 +206,74 @@ app.post("/users/unfollow", async (req, res) => {
   }
 });
 
-//endpoint to create a new post in the backend
+// //endpoint to create a new post in the backend
+// app.post("/create-post", async (req, res) => {
+//   try {
+//     const { content, userId } = req.body;
+
+//     const newPostData = {
+//       user: userId,
+//     };
+
+//     if (content) {
+//       newPostData.content = content;
+//     }
+
+//     const newPost = new Post(newPostData);
+
+//     await newPost.save();
+
+//     res.status(200).json({ message: "Post saved successfully" });
+//   } catch (error) {
+//     res.status(500).json({ message: "post creation failed" });
+//   }
+// });
+// //endpoint to create a new sales post in the backend
+// app.post("/create-SalePosts", async (req, res) => {
+//   try {
+//     const { content, userId } = req.body;
+
+//     const newSalesPostData = {
+//       user: userId,
+//     };
+
+//     if (content) {
+//       newSalesPostData.content = content;
+//     }
+
+//     const salepost = new salesPost(newSalesPostData);
+
+//     await salepost.save();
+
+//     res.status(200).json({ message: "Post saved successfully" });
+//   } catch (error) {
+//     res.status(500).json({ message: "post creation failed" });
+//   }
+// });
+// //endpoint to create a new buy post in the backend
+// app.post("/create-BuyPosts", async (req, res) => {
+//   try {
+//     const { content, userId } = req.body;
+
+//     const newBuyPostData = {
+//       user: userId,
+//     };
+
+//     if (content) {
+//       newBuyPostData.content = content;
+//     }
+
+//     const newBuyPost = new buyPost(newBuyPostData);
+
+//     await newBuyPost.save();
+
+//     res.status(200).json({ message: "Post saved successfully" });
+//   } catch (error) {
+//     res.status(500).json({ message: "post creation failed" });
+//   }
+// });
+
+// Example WebSocket route to notify clients when a new post is created
 app.post("/create-post", async (req, res) => {
   try {
     const { content, userId } = req.body;
@@ -202,15 +287,22 @@ app.post("/create-post", async (req, res) => {
     }
 
     const newPost = new Post(newPostData);
-
     await newPost.save();
+
+    // Notify all connected clients about the new post
+    wss.clients.forEach((client) => {
+      if (client.readyState === ws.OPEN) {
+        client.send(JSON.stringify({ type: "NEW_POST", post: newPost }));
+      }
+    });
 
     res.status(200).json({ message: "Post saved successfully" });
   } catch (error) {
-    res.status(500).json({ message: "post creation failed" });
+    res.status(500).json({ message: "Post creation failed" });
   }
 });
-//endpoint to create a new sales post in the backend
+
+// Example WebSocket route to notify clients when a new sales post is created
 app.post("/create-SalePosts", async (req, res) => {
   try {
     const { content, userId } = req.body;
@@ -224,15 +316,22 @@ app.post("/create-SalePosts", async (req, res) => {
     }
 
     const salepost = new salesPost(newSalesPostData);
-
     await salepost.save();
 
-    res.status(200).json({ message: "Post saved successfully" });
+    // Notify all connected clients about the new sales post
+    wss.clients.forEach((client) => {
+      if (client.readyState === ws.OPEN) {
+        client.send(JSON.stringify({ type: "NEW_SALES_POST", post: salepost }));
+      }
+    });
+
+    res.status(200).json({ message: "Sales post saved successfully" });
   } catch (error) {
-    res.status(500).json({ message: "post creation failed" });
+    res.status(500).json({ message: "Sales post creation failed" });
   }
 });
-//endpoint to create a new buy post in the backend
+
+// Example WebSocket route to notify clients when a new buy post is created
 app.post("/create-BuyPosts", async (req, res) => {
   try {
     const { content, userId } = req.body;
@@ -246,12 +345,18 @@ app.post("/create-BuyPosts", async (req, res) => {
     }
 
     const newBuyPost = new buyPost(newBuyPostData);
-
     await newBuyPost.save();
 
-    res.status(200).json({ message: "Post saved successfully" });
+    // Notify all connected clients about the new buy post
+    wss.clients.forEach((client) => {
+      if (client.readyState === ws.OPEN) {
+        client.send(JSON.stringify({ type: "NEW_BUY_POST", post: newBuyPost }));
+      }
+    });
+
+    res.status(200).json({ message: "Buy post saved successfully" });
   } catch (error) {
-    res.status(500).json({ message: "post creation failed" });
+    res.status(500).json({ message: "Buy post creation failed" });
   }
 });
 
