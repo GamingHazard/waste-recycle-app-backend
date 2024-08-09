@@ -4,9 +4,7 @@ const mongoose = require("mongoose");
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 
-require('dotenv').config();
-
-
+require("dotenv").config();
 
 const app = express();
 const port = 3000;
@@ -35,6 +33,8 @@ app.listen(port, () => {
 
 const User = require("./models/user");
 const Post = require("./models/post");
+const salesPost = require("./models/sellPost");
+const buyPost = require("./models/buyPost");
 
 //endpoint to register a user in the backend
 app.post("/register", async (req, res) => {
@@ -71,17 +71,17 @@ const sendVerificationEmail = async (email, verificationToken) => {
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-      user: "sujananand0@gmail.com",
+      user: "",
       pass: "",
     },
   });
 
   //compose the email message
   const mailOptions = {
-    from: "threads.com",
+    from: "Uga-Cycle",
     to: email,
     subject: "Email Verification",
-    text: `please click the following link to verify your email http://localhost:3000/verify/${verificationToken}`,
+    text: `please click the following link to verify your email https://waste-recycle-app-backend.onrender.com/${verificationToken}`,
   };
 
   try {
@@ -210,6 +210,50 @@ app.post("/create-post", async (req, res) => {
     res.status(500).json({ message: "post creation failed" });
   }
 });
+//endpoint to create a new sales post in the backend
+app.post("/create-SalePosts", async (req, res) => {
+  try {
+    const { content, userId } = req.body;
+
+    const newSalesPostData = {
+      user: userId,
+    };
+
+    if (content) {
+      newSalesPostData.content = content;
+    }
+
+    const salepost = new salesPost(newSalesPostData);
+
+    await salepost.save();
+
+    res.status(200).json({ message: "Post saved successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "post creation failed" });
+  }
+});
+//endpoint to create a new buy post in the backend
+app.post("/create-BuyPosts", async (req, res) => {
+  try {
+    const { content, userId } = req.body;
+
+    const newBuyPostData = {
+      user: userId,
+    };
+
+    if (content) {
+      newBuyPostData.content = content;
+    }
+
+    const newBuyPost = new buyPost(newBuyPostData);
+
+    await newBuyPost.save();
+
+    res.status(200).json({ message: "Post saved successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "post creation failed" });
+  }
+});
 
 //endpoint for liking a particular post
 app.put("/posts/:postId/:userId/like", async (req, res) => {
@@ -276,6 +320,36 @@ app.get("/get-posts", async (req, res) => {
       .sort({ createdAt: -1 });
 
     res.status(200).json(posts);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "An error occurred while getting the posts" });
+  }
+});
+//endpoint to get all the  Buy posts
+app.get("/get-BuyPosts", async (req, res) => {
+  try {
+    const BuyPosts = await buyPost
+      .find()
+      .populate("user", "name")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(BuyPosts);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "An error occurred while getting the posts" });
+  }
+});
+//endpoint to get all the  Sale posts
+app.get("/get-SalePosts", async (req, res) => {
+  try {
+    const SalePosts = await salesPost
+      .find()
+      .populate("user", "name")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(SalePosts);
   } catch (error) {
     res
       .status(500)
